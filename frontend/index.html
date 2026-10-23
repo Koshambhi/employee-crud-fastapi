@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Employee Manager - Premium</title>
+    <title>Employee Management System</title>
 
     <style>
         :root {
@@ -12,11 +12,11 @@
             --text: #e7ecf5;
             --muted: #a8b3c7;
             --border: rgba(255, 255, 255, 0.12);
-            --accent: #6ea8fe;
             --danger: #ff6b6b;
         }
 
         * { box-sizing: border-box; }
+
         body {
             margin: 0;
             font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -25,54 +25,37 @@
             line-height: 1.4;
         }
 
-        .content {
+        main {
             max-width: 1100px;
             margin: 0 auto;
             padding: 24px 16px 48px;
         }
 
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        header {
             padding: 16px 18px;
             border: 1px solid var(--border);
             border-radius: 12px;
             background: rgba(16, 26, 46, 0.65);
-            backdrop-filter: blur(6px);
             margin-bottom: 18px;
         }
 
-        .topbar h1 {
-            font-size: 1.25rem;
+        h1 {
+            font-size: 1.35rem;
             margin: 0;
-            letter-spacing: 0.2px;
         }
 
         .card {
             border: 1px solid var(--border);
             border-radius: 12px;
             background: rgba(16, 26, 46, 0.65);
-            backdrop-filter: blur(6px);
             padding: 18px;
             margin-bottom: 18px;
-        }
-
-        .card h2 {
-            margin: 0 0 12px;
-            font-size: 1.1rem;
         }
 
         .hint {
             margin: 0 0 14px;
             color: var(--muted);
             font-size: 0.95rem;
-        }
-
-        .hint strong { color: var(--text); }
-
-        form {
-            margin: 0;
         }
 
         .form-grid {
@@ -93,7 +76,6 @@
 
         .req {
             color: var(--danger);
-            margin-left: 4px;
         }
 
         input[type="text"],
@@ -107,13 +89,14 @@
             color: var(--text);
         }
 
-        input:focus {
+        input:focus,
+        button:focus {
             outline: 2px solid rgba(110, 168, 254, 0.55);
             outline-offset: 2px;
             border-color: rgba(110, 168, 254, 0.55);
         }
 
-        .field-help {
+        .field-hint {
             margin-top: 6px;
             font-size: 0.9rem;
             color: var(--muted);
@@ -129,7 +112,7 @@
         button {
             appearance: none;
             border: 1px solid var(--border);
-            background: rgba(110, 168, 254, 0.18);
+            background: rgba(255, 255, 255, 0.06);
             color: var(--text);
             padding: 10px 14px;
             border-radius: 10px;
@@ -137,18 +120,12 @@
             font-weight: 600;
         }
 
+        button.primary {
+            background: rgba(110, 168, 254, 0.18);
+        }
+
         button:hover {
             border-color: rgba(110, 168, 254, 0.55);
-            background: rgba(110, 168, 254, 0.24);
-        }
-
-        button:focus {
-            outline: 2px solid rgba(110, 168, 254, 0.55);
-            outline-offset: 2px;
-        }
-
-        button.secondary {
-            background: rgba(255, 255, 255, 0.06);
         }
 
         table {
@@ -168,170 +145,133 @@
             color: var(--muted);
             font-weight: 700;
         }
-
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
     </style>
 </head>
 <body>
-    <div class="content">
-        <!-- HEADER WITHOUT SIDEBAR & WITHOUT V ICON -->
-        <header class="topbar">
+    <main>
+        <header>
             <h1>Employee Management System</h1>
         </header>
 
-        <!-- ADD EMPLOYEE CARD -->
-        <div class="card form-card" role="region" aria-labelledby="form-title">
-            <h2 id="form-title">Add Employee</h2>
+        <section class="card" aria-labelledby="form-title">
+            <h2 id="form-title">Add / Update Employee</h2>
 
-            <p class="hint" id="required-fields-hint">
-                <strong>Required fields</strong> are marked with an asterisk (<span class="req" aria-hidden="true">*</span>).
-            </p>
+            <p class="hint" id="required-fields-hint">All fields marked with <span class="req" aria-hidden="true">*</span> are required.</p>
 
-            <form id="employee-form" aria-describedby="required-fields-hint">
-                <!-- ID is auto-generated primary key; hidden input used for edits only -->
+            <form id="employee-form" aria-label="Employee form" aria-describedby="required-fields-hint">
                 <input type="hidden" id="emp-id" name="emp-id" />
 
                 <div class="form-grid">
                     <div>
-                        <label for="name">Name<span class="req" aria-hidden="true">*</span></label>
+                        <label for="name">Name <span class="req" aria-hidden="true">*</span></label>
                         <input
                             type="text"
                             id="name"
                             name="name"
                             autocomplete="name"
-                            aria-required="true"
-                            aria-describedby="name-help"
                             required
+                            aria-required="true"
+                            aria-describedby="name-hint"
                         />
-                        <div class="field-help" id="name-help">Enter the employee's full name.</div>
+                        <div class="field-hint" id="name-hint">Enter the employee's full name.</div>
                     </div>
 
                     <div>
-                        <label for="age">Age<span class="req" aria-hidden="true">*</span></label>
+                        <label for="age">Age <span class="req" aria-hidden="true">*</span></label>
                         <input
                             type="number"
                             id="age"
                             name="age"
-                            inputmode="numeric"
                             min="0"
                             step="1"
-                            aria-required="true"
-                            aria-describedby="age-help"
                             required
+                            aria-required="true"
+                            aria-describedby="age-hint"
                         />
-                        <div class="field-help" id="age-help">Enter the employee's age in years.</div>
+                        <div class="field-hint" id="age-hint">Enter the employee's age in years (0 or greater).</div>
                     </div>
 
                     <div>
-                        <label for="position">Position<span class="req" aria-hidden="true">*</span></label>
+                        <label for="position">Position <span class="req" aria-hidden="true">*</span></label>
                         <input
                             type="text"
                             id="position"
                             name="position"
                             autocomplete="organization-title"
-                            aria-required="true"
-                            aria-describedby="position-help"
                             required
+                            aria-required="true"
+                            aria-describedby="position-hint"
                         />
-                        <div class="field-help" id="position-help">Example: Software Engineer, HR Manager.</div>
+                        <div class="field-hint" id="position-hint">Example: Software Engineer, HR Manager.</div>
                     </div>
 
                     <div>
-                        <label for="department">Department<span class="req" aria-hidden="true">*</span></label>
+                        <label for="department">Department <span class="req" aria-hidden="true">*</span></label>
                         <input
                             type="text"
                             id="department"
                             name="department"
                             autocomplete="organization"
-                            aria-required="true"
-                            aria-describedby="department-help"
                             required
+                            aria-required="true"
+                            aria-describedby="department-hint"
                         />
-                        <div class="field-help" id="department-help">Example: Engineering, Human Resources.</div>
+                        <div class="field-hint" id="department-hint">Example: Engineering, Human Resources.</div>
                     </div>
 
                     <div>
-                        <label for="email">Email<span class="req" aria-hidden="true">*</span></label>
+                        <label for="email">Email <span class="req" aria-hidden="true">*</span></label>
                         <input
                             type="email"
                             id="email"
                             name="email"
                             autocomplete="email"
-                            aria-required="true"
-                            aria-describedby="email-help"
                             required
+                            aria-required="true"
+                            aria-describedby="email-hint"
                         />
-                        <div class="field-help" id="email-help">Use a valid email address (e.g., name@company.com).</div>
+                        <div class="field-hint" id="email-hint">Use a valid email address (e.g., name@company.com).</div>
                     </div>
 
                     <div>
-                        <label for="salary">Salary<span class="req" aria-hidden="true">*</span></label>
+                        <label for="salary">Salary <span class="req" aria-hidden="true">*</span></label>
                         <input
                             type="number"
                             id="salary"
                             name="salary"
-                            inputmode="decimal"
                             min="0"
                             step="0.01"
-                            aria-required="true"
-                            aria-describedby="salary-help"
                             required
+                            aria-required="true"
+                            aria-describedby="salary-hint"
                         />
-                        <div class="field-help" id="salary-help">Enter salary as a number (decimals allowed).</div>
+                        <div class="field-hint" id="salary-hint">Enter salary as a number (decimals allowed).</div>
                     </div>
 
                     <div>
-                        <label for="experience">Experience (Years)<span class="req" aria-hidden="true">*</span></label>
+                        <label for="experience">Experience <span class="req" aria-hidden="true">*</span></label>
                         <input
                             type="number"
                             id="experience"
                             name="experience"
-                            inputmode="numeric"
                             min="0"
                             step="1"
-                            aria-required="true"
-                            aria-describedby="experience-help"
                             required
+                            aria-required="true"
+                            aria-describedby="experience-hint"
                         />
-                        <div class="field-help" id="experience-help">Total years of relevant experience.</div>
+                        <div class="field-hint" id="experience-hint">Total years of relevant experience (0 or greater).</div>
                     </div>
                 </div>
 
                 <div class="actions">
-                    <button
-                        id="submit-btn"
-                        type="button"
-                        onclick="submitForm()"
-                        aria-label="Submit employee form"
-                    >
-                        Add Employee
-                    </button>
-
-                    <button
-                        id="reset-btn"
-                        type="button"
-                        class="secondary"
-                        onclick="resetForm()"
-                        aria-label="Reset employee form"
-                    >
-                        Cancel / Reset
-                    </button>
+                    <button type="button" class="primary" onclick="submitForm()">Add / Update Employee</button>
+                    <button type="button" onclick="resetForm()">Reset</button>
                 </div>
             </form>
-        </div>
+        </section>
 
-        <!-- TABLE -->
-        <div class="card table-card" role="region" aria-labelledby="employees-title">
+        <section class="card" aria-labelledby="employees-title">
             <h2 id="employees-title">All Employees</h2>
 
             <table aria-label="Employees table">
@@ -348,14 +288,10 @@
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
-                <tbody aria-live="polite" aria-label="Employee rows"></tbody>
+                <tbody aria-live="polite"></tbody>
             </table>
-
-            <p class="sr-only" id="table-actions-help">
-                The Actions column contains buttons to edit or delete an employee.
-            </p>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script src="/static/script.js" defer></script>
 </body>
