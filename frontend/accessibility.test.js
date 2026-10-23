@@ -10,21 +10,37 @@ function assert(condition, message) {
   }
 }
 
+function escapeRegExp(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function getAttr(tag, attrName) {
-  const re = new RegExp(`${attrName}\\s*=\\s*"([^"]*)"`, "i");
+  const re = new RegExp(`\\b${escapeRegExp(attrName)}\\s*=\\s*"([^"]*)"`, "i");
   const m = tag.match(re);
   return m ? m[1] : null;
 }
 
 function findTag(html, tagName, predicate) {
-  const re = new RegExp(`<${tagName}\\b[^>]*>`, "gi");
+  const re = new RegExp(`<${escapeRegExp(tagName)}\\b[^>]*>`, "gi");
   const tags = html.match(re) || [];
   return tags.find((t) => (predicate ? predicate(t) : true));
 }
 
 function findAllTags(html, tagName) {
-  const re = new RegExp(`<${tagName}\\b[^>]*>`, "gi");
+  const re = new RegExp(`<${escapeRegExp(tagName)}\\b[^>]*>`, "gi");
   return html.match(re) || [];
+}
+
+function findControlById(html, id) {
+  const idEsc = escapeRegExp(id);
+
+  // Restrict to common form controls explicitly (no unsupported tagName patterns)
+  const candidates = []
+    .concat(findAllTags(html, "input"))
+    .concat(findAllTags(html, "select"))
+    .concat(findAllTags(html, "textarea"));
+
+  return candidates.find((t) => getAttr(t, "id") === id) || null;
 }
 
 const htmlPath = path.join(__dirname, "index.html");
@@ -52,10 +68,7 @@ const requiredIds = [
 
 for (const id of requiredIds) {
   // input/select/textarea with id
-  const fieldTag = findTag(html, "(input|select|textarea)", (t) => {
-    const fieldId = getAttr(t, "id");
-    return fieldId === id;
-  });
+  const fieldTag = findControlById(html, id);
   assert(fieldTag, `Missing form control with id="${id}"`);
 
   // label for
