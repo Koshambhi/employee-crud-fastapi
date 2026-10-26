@@ -17,50 +17,64 @@
 
     <!-- ADD EMPLOYEE CARD -->
     <div class="card form-card">
-        <h2 id="form-title">Add Employee</h2>
+        <h2 id="form-title" tabindex="-1">Add Employee</h2>
 
-        <div class="form-grid">
+        <p id="required-hint">Fields marked * are required.</p>
+
+        <form id="employee-form" class="form-grid" novalidate aria-labelledby="form-title" aria-describedby="required-hint">
 
             <input type="hidden" id="emp-id">
 
             <div>
-                <label>Name</label>
-                <input type="text" id="name">
+                <label for="name">Name <span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="text" id="name" name="name" autocomplete="name" maxlength="100" required aria-required="true" aria-describedby="name-error">
+                <span id="name-error" class="field-error"></span>
             </div>
 
             <div>
-                <label>Age</label>
-                <input type="number" id="age">
+                <label for="age">Age <span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="number" id="age" name="age" autocomplete="off" min="18" max="100" step="1" required aria-required="true" aria-describedby="age-error">
+                <span id="age-error" class="field-error"></span>
             </div>
 
             <div>
-                <label>Position</label>
-                <input type="text" id="position">
+                <label for="position">Position <span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="text" id="position" name="position" autocomplete="organization-title" maxlength="100" required aria-required="true" aria-describedby="position-error">
+                <span id="position-error" class="field-error"></span>
             </div>
 
             <div>
-                <label>Department</label>
-                <input type="text" id="department">
+                <label for="department">Department <span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="text" id="department" name="department" autocomplete="off" maxlength="100" required aria-required="true" aria-describedby="department-error">
+                <span id="department-error" class="field-error"></span>
             </div>
 
             <div>
-                <label>Email</label>
-                <input type="email" id="email">
+                <label for="email">Email <span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="email" id="email" name="email" autocomplete="email" maxlength="100" required aria-required="true" aria-describedby="email-error">
+                <span id="email-error" class="field-error"></span>
             </div>
 
             <div>
-                <label>Salary</label>
-                <input type="number" id="salary">
+                <label for="salary">Salary <span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="number" id="salary" name="salary" autocomplete="off" min="0" max="10000000" step="any" required aria-required="true" aria-describedby="salary-error">
+                <span id="salary-error" class="field-error"></span>
             </div>
 
             <div>
-                <label>Experience (Years)</label>
-                <input type="number" id="experience">
+                <label for="experience">Experience (Years) <span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="number" id="experience" name="experience" autocomplete="off" min="0" max="80" step="1" required aria-required="true" aria-describedby="experience-error">
+                <span id="experience-error" class="field-error"></span>
             </div>
 
-        </div>
+            <div class="form-actions">
+                <button type="submit" id="submit-btn">Add Employee</button>
+                <button type="button" id="cancel-btn" hidden>Cancel</button>
+            </div>
+        </form>
 
-        <button id="submit-btn" onclick="submitForm()">Add Employee</button>
+        <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
+        <div id="feedback-error" class="feedback" aria-live="assertive" aria-atomic="true"></div>
     </div>
 
     <!-- TABLE -->
@@ -68,17 +82,18 @@
         <h2>All Employees</h2>
 
         <table>
+            <caption class="sr-only">Employee list</caption>
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Age</th>
-                    <th>Position</th>
-                    <th>Department</th>
-                    <th>Email</th>
-                    <th>Salary</th>
-                    <th>Experience</th>
-                    <th>Actions</th>
+                    <th scope="col">ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Age</th>
+                    <th scope="col">Position</th>
+                    <th scope="col">Department</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Salary</th>
+                    <th scope="col">Experience</th>
+                    <th scope="col">Actions</th>
                 </tr>
             </thead>
             <tbody></tbody>
