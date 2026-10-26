@@ -65,21 +65,13 @@ function validateValues(values, badInput) {
     return errors;
 }
 
-function escapeHtml(value) {
-    return String(value === undefined || value === null ? "" : value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
-
 if (typeof module !== "undefined") {
-    module.exports = { validateValues, escapeHtml, RULES };
+    module.exports = { validateValues };
 }
 
 if (typeof document !== "undefined") {
     const byId = (id) => document.getElementById(id);
+    const REFRESH_FAILED = " The list could not be refreshed.";
 
     function readValues() {
         const values = {};
@@ -129,15 +121,24 @@ if (typeof document !== "undefined") {
         });
     }
 
+    // The regions stay rendered (see .feedback:empty in style.css) so screen readers announce changes.
+    // Only the other region is cleared; the target is updated in place with no synchronous clear.
     function showFeedback(type, message) {
-        clearFeedback();
-        const el = byId(type === "error" ? "feedback-error" : "feedback");
+        const isError = type === "error";
+        const other = byId(isError ? "feedback" : "feedback-error");
+        other.textContent = "";
+        other.className = "feedback";
+        const el = byId(isError ? "feedback-error" : "feedback");
         el.className = `feedback ${type}`;
         el.textContent = message;
     }
 
-    function feedbackPending() {
-        return byId("feedback").textContent !== "" || byId("feedback-error").textContent !== "";
+    function describe422(body) {
+        if (!body || !Array.isArray(body.detail) || body.detail.length === 0) return null;
+        return body.detail.slice(0, 3).map((d) => {
+            const field = Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : "";
+            return field ? `${field}: ${d.msg}` : String(d.msg);
+        }).join("; ");
     }
 
     // Wraps fetch: resolves to { data } on success or { error } with a user-facing message.
@@ -150,7 +151,11 @@ if (typeof document !== "undefined") {
         }
         if (!res.ok) {
             if (res.status === 404) return { error: notFoundMsg || "Employee not found. It may have been deleted." };
-            if (res.status === 422) return { error: "The server rejected the data. Check the fields and try again." };
+            if (res.status === 422) {
+                let detail = null;
+                try { detail = describe422(await res.json()); } catch (e) { detail = null; }
+                return { error: detail ? `The server rejected the data (${detail}).` : "The server rejected the data. Check the fields and try again." };
+            }
             return { error: `Request failed (status ${res.status}). Please try again.` };
         }
         try {
@@ -176,17 +181,23 @@ if (typeof document !== "undefined") {
         return b;
     }
 
-    async function loadEmployees() {
+    let loadSeq = 0;
+
+    // opts.quiet: do not show an error here; the caller reports the returned false.
+    async function loadEmployees(opts) {
+        const seq = ++loadSeq;
         const result = await request("/employees", undefined, "Employee list not found.");
-        if (result.error) {
-            if (!feedbackPending()) showFeedback("error", `Could not load employees. ${result.error}`);
+        if (seq !== loadSeq) return true; // a newer refresh is in flight and will render
+        if (result.error || !Array.isArray(result.data)) {
+            if (!(opts && opts.quiet)) showFeedback("error", `Could not load employees. ${result.error || "Unexpected response."}`);
             return false;
         }
         const tbody = document.querySelector("tbody");
         tbody.innerHTML = "";
-        (result.data || []).forEach((emp) => {
+        result.data.forEach((emp) => {
             const id = Number(emp.id);
             const tr = document.createElement("tr");
+            tr.setAttribute("data-id", String(id));
             [emp.id, emp.name, emp.age, emp.position, emp.department, emp.email, emp.salary, emp.experience]
                 .forEach((v) => tr.appendChild(cell(v)));
             const actions = document.createElement("td");
@@ -196,6 +207,32 @@ if (typeof document !== "undefined") {
             tbody.appendChild(tr);
         });
         return true;
+    }
+
+    function tableRows() {
+        return [...document.querySelectorAll("tbody tr")];
+    }
+
+    function rowIndex(id) {
+        return tableRows().findIndex((tr) => tr.getAttribute("data-id") === String(id));
+    }
+
+    // Focus the button of class cls in row idx (clamped to the last row), else the Name field.
+    function focusRowButton(idx, cls) {
+        const rows = tableRows();
+        const row = rows.length ? rows[Math.min(Math.max(idx, 0), rows.length - 1)] : null;
+        const btn = row ? row.querySelector(`.${cls}`) : null;
+        (btn || byId("name")).focus();
+    }
+
+    // In-flight guard: blocks re-entry and disables the submit button.
+    let busy = false;
+    function setBusy(on) {
+        busy = on;
+        const btn = byId("submit-btn");
+        btn.disabled = on;
+        if (on) btn.setAttribute("aria-busy", "true");
+        else btn.removeAttribute("aria-busy");
     }
 
     function setEditMode(editing) {
@@ -214,6 +251,7 @@ if (typeof document !== "undefined") {
 
     async function submitForm(event) {
         if (event) event.preventDefault();
+        if (busy) return;
         if (!validateForm()) return;
 
         const id = byId("emp-id").value;
@@ -229,51 +267,79 @@ if (typeof document !== "undefined") {
             experience: parseInt(v.experience, 10)
         };
 
-        const result = await request(
-            id ? `/employees/${id}` : "/employees",
-            {
-                method: id ? "PUT" : "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(empData)
+        const submitBtn = byId("submit-btn");
+        const hadFocus = document.activeElement === submitBtn;
+        setBusy(true);
+        try {
+            const result = await request(
+                id ? `/employees/${id}` : "/employees",
+                {
+                    method: id ? "PUT" : "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(empData)
+                }
+            );
+            if (result.error) {
+                showFeedback("error", `${id ? "Update" : "Add"} failed. ${result.error}`);
+                return; // keep the user's data in the form
             }
-        );
-        if (result.error) {
-            showFeedback("error", `${id ? "Update" : "Add"} failed. ${result.error}`);
-            return; // keep the user's data in the form
+            resetForm();
+            const ok = await loadEmployees({ quiet: true });
+            showFeedback("success", (id ? "Employee updated successfully." : "Employee added successfully.") + (ok ? "" : REFRESH_FAILED));
+        } finally {
+            setBusy(false);
+            if (hadFocus || document.activeElement === document.body) submitBtn.focus();
         }
-        resetForm();
-        showFeedback("success", id ? "Employee updated successfully." : "Employee added successfully.");
-        loadEmployees();
     }
 
     async function editEmployee(id) {
-        const result = await request(`/employees/${id}`);
-        if (result.error) {
-            showFeedback("error", `Could not load employee for editing. ${result.error}`);
-            loadEmployees();
-            return;
+        if (busy) return;
+        setBusy(true);
+        try {
+            const result = await request(`/employees/${id}`);
+            if (result.error || !result.data) {
+                const msg = result.error || "The server returned an unexpected response.";
+                const idx = rowIndex(id);
+                const ok = await loadEmployees({ quiet: true });
+                const now = rowIndex(id);
+                focusRowButton(now !== -1 ? now : idx, "edit-btn");
+                showFeedback("error", `Could not load employee for editing. ${msg}` + (ok ? "" : REFRESH_FAILED));
+                return;
+            }
+            const emp = result.data;
+            clearFieldErrors();
+            clearFeedback();
+            byId("emp-id").value = emp.id;
+            FIELD_IDS.forEach((f) => { byId(f).value = emp[f]; });
+            setEditMode(true);
+            byId("name").focus();
+        } finally {
+            setBusy(false);
         }
-        const emp = result.data;
-        clearFieldErrors();
-        clearFeedback();
-        byId("emp-id").value = emp.id;
-        FIELD_IDS.forEach((f) => { byId(f).value = emp[f]; });
-        setEditMode(true);
-        byId("name").focus();
     }
 
     async function deleteEmployee(id) {
+        if (busy) return;
         if (!window.confirm("Delete this employee? This cannot be undone.")) return;
-        const result = await request(`/employees/${id}`, { method: "DELETE" });
-        if (result.error) {
-            showFeedback("error", `Delete failed. ${result.error}`);
-            loadEmployees();
-            return;
+        const idx = rowIndex(id);
+        setBusy(true);
+        try {
+            const result = await request(`/employees/${id}`, { method: "DELETE" });
+            if (result.error) {
+                const ok = await loadEmployees({ quiet: true });
+                const now = rowIndex(id);
+                focusRowButton(now !== -1 ? now : idx, "delete-btn");
+                showFeedback("error", `Delete failed. ${result.error}` + (ok ? "" : REFRESH_FAILED));
+                return;
+            }
+            if (byId("emp-id").value === String(id)) resetForm();
+            const ok = await loadEmployees({ quiet: true });
+            // Move focus first, then update the live region so the polite message is queued after it.
+            focusRowButton(idx, "delete-btn");
+            showFeedback("success", "Employee deleted successfully." + (ok ? "" : REFRESH_FAILED));
+        } finally {
+            setBusy(false);
         }
-        if (byId("emp-id").value === String(id)) resetForm();
-        showFeedback("success", "Employee deleted successfully.");
-        await loadEmployees();
-        byId("form-title").focus();
     }
 
     byId("employee-form").addEventListener("submit", submitForm);
@@ -290,12 +356,6 @@ if (typeof document !== "undefined") {
             if (el.getAttribute("aria-invalid") === "true") validateField(id);
         });
     });
-
-    // Keep the original global names available.
-    window.editEmployee = editEmployee;
-    window.deleteEmployee = deleteEmployee;
-    window.submitForm = submitForm;
-    window.resetForm = resetForm;
 
     loadEmployees();
 }

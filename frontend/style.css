@@ -145,8 +145,14 @@ input[aria-invalid="true"] {
     background: #333;
 }
 
+/* Keep empty live regions rendered (not display:none) so announcements work. */
 .feedback:empty {
-    display: none;
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    height: 0;
+    overflow: hidden;
 }
 
 .feedback {
