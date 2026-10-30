@@ -119,3 +119,23 @@ DELETE	/employees/{id}	Delete employee
   "experience": 2
 }
 
+
+## Accessibility and validation
+
+The employee form is a native `<form>` with labelled, required fields (marked `*`), inline error messages and live-region feedback for add, update and delete.
+
+Client-side rules (defined in `frontend/script.js`; the server does not enforce them):
+
+- Name, position, department: required, at most 100 characters.
+- Age: whole number from 18 to 100.
+- Email: required, valid format, at most 100 characters.
+- Salary: number greater than 0 and at most 10,000,000.
+- Experience: whole number from 0 to 80.
+
+Run the automated checks from the repo root (no dependencies):
+
+```
+node frontend/accessibility.test.js
+```
+
+Screen-reader and browser behaviour must be checked manually.
